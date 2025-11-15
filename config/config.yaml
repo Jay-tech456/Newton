@@ -1,0 +1,77 @@
+# Autonomous Driving Data Pipeline Configuration
+
+# Data Processing
+data:
+  input_dir: "./data/input"
+  output_dir: "./data/output"
+  temp_dir: "./data/temp"
+  supported_formats: [".jpg", ".jpeg", ".png", ".bmp", ".csv", ".zip"]
+
+# YOLO Model Configuration
+yolo:
+  model_name: "yolov8n.pt"  # Nano model for real-time processing
+  confidence_threshold: 0.5
+  iou_threshold: 0.45
+  max_detections: 100
+  classes_to_track:
+    - "person"       # pedestrians
+    - "car"          # vehicles
+    - "truck"        # large vehicles
+    - "bus"          # public transport
+    - "motorcycle"   # motorcycles
+    - "bicycle"      # bicycles
+    - "traffic light"
+    - "stop sign"
+    - "parking meter"
+    - "bench"
+
+# Vector Database (Pinecone)
+pinecone:
+  api_key: "${PINECONE_API_KEY}"
+  environment: "${PINECONE_ENVIRONMENT}"
+  index_name: "autonomous-driving-frames"
+  dimension: 1536  # For text embeddings
+  metric: "cosine"
+  batch_size: 100
+
+# Embedding Configuration
+embeddings:
+  model_name: "sentence-transformers/all-MiniLM-L6-v2"
+  batch_size: 32
+  device: "cpu"  # Change to "cuda" if GPU available
+
+# Image Analysis
+image_analysis:
+  resize_dimensions: [640, 640]
+  extract_features: true
+  detect_lanes: true
+  estimate_depth: true
+  analyze_weather: true
+
+# CSV Processing
+csv:
+  required_columns:
+    - "frame_id"
+    - "timestamp"
+    - "ego_speed_mps"
+    - "ego_yaw"
+    - "road_type"
+    - "weather"
+    - "lead_distance_m"
+    - "cut_in_flag"
+    - "pedestrian_flag"
+  timestamp_format: "%.2f"  # Format for parsing timestamps
+
+# Real-time Processing
+realtime:
+  buffer_size: 1000
+  processing_interval: 0.1  # seconds
+  enable_monitoring: true
+  log_level: "INFO"
+
+# Multi-agent Interface
+agent_interface:
+  frame_structure: "comprehensive"
+  include_raw_data: false
+  metadata_only: true
+  vector_search_enabled: true
