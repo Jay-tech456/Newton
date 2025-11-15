@@ -354,13 +354,6 @@ export default function HomePage() {
                   <Database className="w-5 h-5 mr-2" />
                   View All Datasets
                 </button>
-                <button
-                  onClick={() => setInputMessage('Show my datasets')}
-                  className="w-full btn-secondary justify-center"
-                >
-                  <Zap className="w-5 h-5 mr-2" />
-                  Start Analysis
-                </button>
               </div>
             </div>
 

@@ -192,6 +192,10 @@ export default function AnalysisWorkspace() {
       
       await updateTaskStep(4, 'in_progress')
       const analysisData = await api.analyzeEvent(dataset.id, events[0].id)
+      console.log('Analysis Data:', analysisData)
+      console.log('Judge Decision:', analysisData.judge_decision)
+      console.log('Safety Score:', analysisData.judge_decision?.safety_lab_score)
+      console.log('Performance Score:', analysisData.judge_decision?.performance_lab_score)
       setAnalysis(analysisData)
       await updateTaskStep(4, 'completed', 'Judge decision rendered')
       
@@ -590,13 +594,13 @@ export default function AnalysisWorkspace() {
                       <div className="bg-white rounded-xl p-4 border-2 border-safety-200">
                         <div className="text-sm text-gray-600 mb-1">SafetyLab Score</div>
                         <div className="text-3xl font-black text-safety-600">
-                          {(analysis.judge_decision.safety_lab_score * 100).toFixed(0)}%
+                          {((analysis.judge_decision?.safety_lab_score || 0) * 100).toFixed(0)}%
                         </div>
                       </div>
                       <div className="bg-white rounded-xl p-4 border-2 border-performance-200">
                         <div className="text-sm text-gray-600 mb-1">PerformanceLab Score</div>
                         <div className="text-3xl font-black text-performance-600">
-                          {(analysis.judge_decision.performance_lab_score * 100).toFixed(0)}%
+                          {((analysis.judge_decision?.performance_lab_score || 0) * 100).toFixed(0)}%
                         </div>
                       </div>
                     </div>

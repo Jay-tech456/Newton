@@ -43,8 +43,8 @@ ENV/
 *.sqlite3
 
 # Uploads and storage
-backend/storage/datasets/*
-backend/storage/frames/*
+# backend/storage/datasets/*
+# backend/storage/frames/*
 !backend/storage/datasets/.gitkeep
 !backend/storage/frames/.gitkeep
 

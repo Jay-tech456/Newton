@@ -161,116 +161,126 @@ def analyze_event(
     """
     Run SafetyLab and PerformanceLab analysis on an event.
     """
-    # Get event
-    event = db.query(Event).filter(Event.id == event_id, Event.dataset_id == dataset_id).first()
-    if not event:
-        raise HTTPException(status_code=404, detail="Event not found")
+    try:
+        # Get event
+        event = db.query(Event).filter(Event.id == event_id, Event.dataset_id == dataset_id).first()
+        if not event:
+            raise HTTPException(status_code=404, detail="Event not found")
     
-    # Get current active genomes
-    safety_genome_record = db.query(StrategyGenome).filter(
-        StrategyGenome.lab_name == "SafetyLab",
-        StrategyGenome.is_active == 1
-    ).order_by(StrategyGenome.created_at.desc()).first()
+        # Get current active genomes
+        safety_genome_record = db.query(StrategyGenome).filter(
+            StrategyGenome.lab_name == "SafetyLab",
+            StrategyGenome.is_active == 1
+        ).order_by(StrategyGenome.created_at.desc()).first()
+        
+        performance_genome_record = db.query(StrategyGenome).filter(
+            StrategyGenome.lab_name == "PerformanceLab",
+            StrategyGenome.is_active == 1
+        ).order_by(StrategyGenome.created_at.desc()).first()
+        
+        # If no genomes exist, create default ones
+        if not safety_genome_record:
+            from app.agents.meta_learner import MetaLearnerAgent
+            meta_learner = MetaLearnerAgent()
+            _, genome_dict = meta_learner.create_new_genome_version(
+                meta_learner.create_initial_genome("SafetyLab"),
+                "SafetyLab",
+                None,
+                "Initial genome for SafetyLab"
+            )
+            safety_genome_record = StrategyGenome(**genome_dict)
+            db.add(safety_genome_record)
+            db.commit()
+            db.refresh(safety_genome_record)
+        
+        if not performance_genome_record:
+            from app.agents.meta_learner import MetaLearnerAgent
+            meta_learner = MetaLearnerAgent()
+            _, genome_dict = meta_learner.create_new_genome_version(
+                meta_learner.create_initial_genome("PerformanceLab"),
+                "PerformanceLab",
+                None,
+                "Initial genome for PerformanceLab"
+            )
+            performance_genome_record = StrategyGenome(**genome_dict)
+            db.add(performance_genome_record)
+            db.commit()
+            db.refresh(performance_genome_record)
     
-    performance_genome_record = db.query(StrategyGenome).filter(
-        StrategyGenome.lab_name == "PerformanceLab",
-        StrategyGenome.is_active == 1
-    ).order_by(StrategyGenome.created_at.desc()).first()
-    
-    # If no genomes exist, create default ones
-    if not safety_genome_record:
-        from app.services.meta_learner import MetaLearner
-        meta_learner = MetaLearner()
-        _, genome_dict = meta_learner.create_new_genome_version(
-            meta_learner.create_initial_genome("SafetyLab"),
-            "SafetyLab",
-            None,
-            "Initial genome for SafetyLab"
+        # Prepare event data
+        event_data = {
+            "event_type": event.event_type.value,
+            "severity": event.severity,
+            "ego_speed_mps": event.ego_speed_mps,
+            "road_type": event.road_type,
+            "weather": event.weather,
+            "lead_distance_m": event.lead_distance_m,
+            "cut_in_flag": event.cut_in_flag,
+            "pedestrian_flag": event.pedestrian_flag
+        }
+        
+        # Run analysis
+        analysis_result = lab_orchestrator.run_analysis(
+            event_data,
+            safety_genome_record.genome_data,
+            performance_genome_record.genome_data
         )
-        safety_genome_record = StrategyGenome(**genome_dict)
-        db.add(safety_genome_record)
+        
+        # Check if genomes were updated
+        new_safety_version = None
+        new_performance_version = None
+        
+        if analysis_result["genome_updates"]["safety_lab"]["updated"]:
+            # Create new genome version
+            new_version, genome_dict = lab_orchestrator.meta_learner.create_new_genome_version(
+                analysis_result["genome_updates"]["safety_lab"]["new_genome"],
+                "SafetyLab",
+                safety_genome_record.version,
+                analysis_result["genome_updates"]["safety_lab"]["changes"]
+            )
+            new_safety_genome = StrategyGenome(**genome_dict)
+            db.add(new_safety_genome)
+            new_safety_version = new_version
+        
+        if analysis_result["genome_updates"]["performance_lab"]["updated"]:
+            # Create new genome version
+            new_version, genome_dict = lab_orchestrator.meta_learner.create_new_genome_version(
+                analysis_result["genome_updates"]["performance_lab"]["new_genome"],
+                "PerformanceLab",
+                performance_genome_record.version,
+                analysis_result["genome_updates"]["performance_lab"]["changes"]
+            )
+            new_performance_genome = StrategyGenome(**genome_dict)
+            db.add(new_performance_genome)
+            new_performance_version = new_version
+        
+        # Create analysis record
+        analysis = Analysis(
+            event_id=event_id,
+            safety_lab_output=analysis_result["safety_lab_output"],
+            performance_lab_output=analysis_result["performance_lab_output"],
+            judge_decision=analysis_result["judge_decision"],
+            safety_genome_version=safety_genome_record.version,
+            performance_genome_version=performance_genome_record.version,
+            new_safety_genome_version=new_safety_version,
+            new_performance_genome_version=new_performance_version,
+            duration_seconds=int(analysis_result["total_duration_seconds"])
+        )
+        
+        db.add(analysis)
         db.commit()
-        db.refresh(safety_genome_record)
-    
-    if not performance_genome_record:
-        from app.services.meta_learner import MetaLearner
-        meta_learner = MetaLearner()
-        _, genome_dict = meta_learner.create_new_genome_version(
-            meta_learner.create_initial_genome("PerformanceLab"),
-            "PerformanceLab",
-            None,
-            "Initial genome for PerformanceLab"
-        )
-        performance_genome_record = StrategyGenome(**genome_dict)
-        db.add(performance_genome_record)
-        db.commit()
-        db.refresh(performance_genome_record)
-    
-    # Prepare event data
-    event_data = {
-        "event_type": event.event_type.value,
-        "severity": event.severity,
-        "ego_speed_mps": event.ego_speed_mps,
-        "road_type": event.road_type,
-        "weather": event.weather,
-        "lead_distance_m": event.lead_distance_m,
-        "cut_in_flag": event.cut_in_flag,
-        "pedestrian_flag": event.pedestrian_flag
-    }
-    
-    # Run analysis
-    analysis_result = lab_orchestrator.run_analysis(
-        event_data,
-        safety_genome_record.genome_data,
-        performance_genome_record.genome_data
-    )
-    
-    # Check if genomes were updated
-    new_safety_version = None
-    new_performance_version = None
-    
-    if analysis_result["genome_updates"]["safety_lab"]["updated"]:
-        # Create new genome version
-        new_version, genome_dict = lab_orchestrator.meta_learner.create_new_genome_version(
-            analysis_result["genome_updates"]["safety_lab"]["new_genome"],
-            "SafetyLab",
-            safety_genome_record.version,
-            analysis_result["genome_updates"]["safety_lab"]["changes"]
-        )
-        new_safety_genome = StrategyGenome(**genome_dict)
-        db.add(new_safety_genome)
-        new_safety_version = new_version
-    
-    if analysis_result["genome_updates"]["performance_lab"]["updated"]:
-        # Create new genome version
-        new_version, genome_dict = lab_orchestrator.meta_learner.create_new_genome_version(
-            analysis_result["genome_updates"]["performance_lab"]["new_genome"],
-            "PerformanceLab",
-            performance_genome_record.version,
-            analysis_result["genome_updates"]["performance_lab"]["changes"]
-        )
-        new_performance_genome = StrategyGenome(**genome_dict)
-        db.add(new_performance_genome)
-        new_performance_version = new_version
-    
-    # Create analysis record
-    analysis = Analysis(
-        event_id=event_id,
-        safety_lab_output=analysis_result["safety_lab_output"],
-        performance_lab_output=analysis_result["performance_lab_output"],
-        judge_decision=analysis_result["judge_decision"],
-        safety_genome_version=safety_genome_record.version,
-        performance_genome_version=performance_genome_record.version,
-        new_safety_genome_version=new_safety_version,
-        new_performance_genome_version=new_performance_version,
-        duration_seconds=int(analysis_result["total_duration_seconds"])
-    )
-    
-    db.add(analysis)
-    db.commit()
-    db.refresh(analysis)
-    
-    return analysis
+        db.refresh(analysis)
+        
+        return analysis
+    except Exception as e:
+        import traceback
+        import logging
+        logger = logging.getLogger(__name__)
+        error_details = traceback.format_exc()
+        logger.error(f"ERROR in analyze_event: {str(e)}")
+        logger.error(f"Traceback: {error_details}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
 
 @router.get("/api/datasets/{dataset_id}/events/{event_id}/analysis", response_model=AnalysisResponse)

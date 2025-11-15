@@ -69,7 +69,13 @@ class CriticAgent:
         # Calculate overall score
         scores = critique.get("scores", {})
         overall_score = sum(scores.get(dim, 0.5) * weights.get(dim, 1.0) for dim in dimensions)
-        overall_score /= sum(weights.get(dim, 1.0) for dim in dimensions)
+        weight_sum = sum(weights.get(dim, 1.0) for dim in dimensions)
+        
+        # Avoid division by zero
+        if weight_sum > 0:
+            overall_score /= weight_sum
+        else:
+            overall_score = 0.5  # Default score if no weights
         
         critique["overall_score"] = overall_score
         

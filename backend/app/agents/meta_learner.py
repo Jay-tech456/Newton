@@ -162,6 +162,71 @@ class MetaLearnerAgent:
         
         return changes if changes else ["No significant changes"]
     
+    def create_initial_genome(self, lab_name: str) -> Dict[str, Any]:
+        """
+        Create initial genome for a lab.
+        
+        Args:
+            lab_name: Name of the lab (SafetyLab or PerformanceLab)
+            
+        Returns:
+            Initial genome configuration
+        """
+        if lab_name == "SafetyLab":
+            return {
+                "retrieval_preferences": {
+                    "keywords": [
+                        "collision avoidance",
+                        "safety critical systems",
+                        "risk assessment",
+                        "autonomous driving safety",
+                        "pedestrian detection"
+                    ],
+                    "venue_weights": {
+                        "ICRA": 0.9,
+                        "IV": 0.85,
+                        "IROS": 0.8,
+                        "ITSC": 0.75
+                    },
+                    "year_window": [2018, 2024]
+                },
+                "critique_focus": {
+                    "weights": {
+                        "safety": 0.9,
+                        "robustness": 0.8,
+                        "novelty": 0.6,
+                        "computational_efficiency": 0.3
+                    }
+                }
+            }
+        else:  # PerformanceLab
+            return {
+                "retrieval_preferences": {
+                    "keywords": [
+                        "optimization",
+                        "computational efficiency",
+                        "real-time processing",
+                        "neural network acceleration",
+                        "model compression"
+                    ],
+                    "venue_weights": {
+                        "CVPR": 0.9,
+                        "NeurIPS": 0.85,
+                        "ICCV": 0.8,
+                        "ECCV": 0.75
+                    },
+                    "year_window": [2020, 2024]
+                },
+                "critique_focus": {
+                    "weights": {
+                        "computational_efficiency": 0.9,
+                        "novelty": 0.8,
+                        "robustness": 0.6,
+                        "safety": 0.3
+                    }
+                }
+            }
+    
     def create_new_genome_version(
         self,
         genome_data: Dict[str, Any],
@@ -176,12 +241,15 @@ class MetaLearnerAgent:
             Tuple of (new_version, genome_dict_for_db)
         """
         # Parse current version (e.g., "v0.1" -> 0.1)
-        try:
-            version_num = float(current_version.replace("v", ""))
-            new_version_num = round(version_num + 0.1, 1)
-            new_version = f"v{new_version_num}"
-        except:
-            new_version = "v0.2"
+        if current_version is None:
+            new_version = "v0.1"
+        else:
+            try:
+                version_num = float(current_version.replace("v", ""))
+                new_version_num = round(version_num + 0.1, 1)
+                new_version = f"v{new_version_num}"
+            except:
+                new_version = "v0.2"
         
         genome_dict = {
             "lab_name": lab_name,
