@@ -120,11 +120,13 @@ def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Dataset not found")
     
     try:
+        # Delete associated analyses first (they reference events)
+        event_ids = [event.id for event in db.query(Event).filter(Event.dataset_id == dataset_id).all()]
+        if event_ids:
+            db.query(Analysis).filter(Analysis.event_id.in_(event_ids)).delete(synchronize_session=False)
+        
         # Delete associated events
         db.query(Event).filter(Event.dataset_id == dataset_id).delete()
-        
-        # Delete associated analyses
-        db.query(Analysis).filter(Analysis.dataset_id == dataset_id).delete()
         
         # Delete dataset files from storage
         if os.path.exists(dataset.upload_path):
@@ -137,6 +139,9 @@ def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
         return {"message": "Dataset deleted successfully", "id": dataset_id}
     except Exception as e:
         db.rollback()
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Delete error: {error_details}")
         raise HTTPException(status_code=500, detail=f"Failed to delete dataset: {str(e)}")
 
 
