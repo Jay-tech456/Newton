@@ -33,20 +33,19 @@ class VectorDatabaseManager:
         self.embedding_config = config['embeddings']
         
         # Initialize Pinecone
-        pinecone.init(
-            api_key=self.pinecone_config['api_key'],
-            environment=self.pinecone_config['environment']
+        self.pc = Pinecone(
+            api_key=self.pinecone_config['api_key']
         )
-        
+
         # Initialize embedding model
         self.embedding_model = SentenceTransformer(
             self.embedding_config['model_name'],
             device=self.embedding_config['device']
         )
-        
+
         self.index_name = self.pinecone_config['index_name']
         self.batch_size = self.pinecone_config['batch_size']
-        
+
         # Initialize index
         self._initialize_index()
         
@@ -55,17 +54,17 @@ class VectorDatabaseManager:
     def _initialize_index(self):
         """Initialize Pinecone index"""
         # Check if index exists
-        if self.index_name not in pinecone.list_indexes():
+        if self.index_name not in self.pc.list_indexes().names():
             logger.info(f"Creating new index: {self.index_name}")
-            pinecone.create_index(
+            self.pc.create_index(
                 name=self.index_name,
                 dimension=self.pinecone_config['dimension'],
                 metric=self.pinecone_config['metric']
             )
-        
+
         # Connect to index
-        self.index = pinecone.Index(self.index_name)
-        
+        self.index = self.pc.Index(self.index_name)
+
         # Get index stats
         stats = self.index.describe_index_stats()
         logger.info(f"Index stats: {stats}")

@@ -173,6 +173,18 @@ def create_sample_data():
     os.makedirs("data/output", exist_ok=True)
     os.makedirs("data/temp", exist_ok=True)
     
+    # Create sample CSV
+    sample_csv = """frame_id,timestamp,ego_speed_mps,ego_yaw,road_type,weather,lead_distance_m,cut_in_flag,pedestrian_flag
+1,0.00,25.5,0.01,highway,clear,35.0,0,0
+2,0.10,26.0,0.02,highway,clear,32.0,1,0
+3,0.20,25.8,0.01,highway,clear,30.0,0,1
+4,0.30,27.2,0.03,urban,clear,15.0,0,0
+5,0.40,24.5,0.02,urban,rainy,12.0,1,1
+6,0.50,26.8,0.01,highway,clear,40.0,0,0
+7,0.60,28.0,0.02,highway,clear,38.0,0,0
+8,0.70,22.0,0.05,urban,rainy,10.0,1,0
+9,0.80,24.2,0.03,urban,clear,18.0,0,1
+10,0.90,26.5,0.01,highway,clear,42.0,0,0"""
     
     with open("data/input/sample_telemetry.csv", "w") as f:
         f.write(sample_csv)
