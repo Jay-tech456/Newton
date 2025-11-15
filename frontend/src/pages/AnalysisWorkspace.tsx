@@ -604,6 +604,51 @@ export default function AnalysisWorkspace() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Genome Evolution Tracker */}
+                    <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl p-4 border-2 border-purple-200">
+                      <h4 className="font-bold text-gray-900 mb-3 flex items-center">
+                        <span className="text-2xl mr-2">🧬</span>
+                        Strategy Evolution
+                      </h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-white rounded-lg p-3">
+                          <div className="text-xs text-gray-500 mb-1">SafetyLab Genome</div>
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono text-sm font-bold text-safety-600">
+                              {analysis.safety_genome_version}
+                            </span>
+                            {analysis.new_safety_genome_version && (
+                              <span className="flex items-center text-xs text-green-600 font-semibold">
+                                → {analysis.new_safety_genome_version}
+                                <span className="ml-1">✨</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="bg-white rounded-lg p-3">
+                          <div className="text-xs text-gray-500 mb-1">PerformanceLab Genome</div>
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono text-sm font-bold text-performance-600">
+                              {analysis.performance_genome_version}
+                            </span>
+                            {analysis.new_performance_genome_version && (
+                              <span className="flex items-center text-xs text-green-600 font-semibold">
+                                → {analysis.new_performance_genome_version}
+                                <span className="ml-1">✨</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      {(analysis.new_safety_genome_version || analysis.new_performance_genome_version) && (
+                        <div className="mt-3 p-2 bg-green-100 rounded-lg">
+                          <p className="text-xs text-green-800 font-semibold">
+                            🎉 Strategies evolved! The labs learned from this analysis and updated their approaches.
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
