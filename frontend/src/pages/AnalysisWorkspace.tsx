@@ -5,6 +5,7 @@ import { api } from '../api/client'
 import type { Dataset, Event, Analysis } from '../types'
 import VideoPlayer from '../components/VideoPlayer'
 import EventTimeline from '../components/EventTimeline'
+// import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 
 interface Message {
   id: number
@@ -12,6 +13,33 @@ interface Message {
   content: string
   timestamp: Date
 }
+
+type HatType =
+  | "white"
+  | "black"
+  | "blue"
+  | "red"
+  | "yellow"
+  | "green";
+
+interface TaskStep {
+  id: number
+  title: string
+  status: 'pending' | 'in_progress' | 'completed'
+  details?: string
+}
+
+// Hat definitions
+// const HAT_SYSTEM_PROMPTS: Record<HatType, string> = {
+//   white: "You are the WHITE hat. Focus ONLY on facts, data, verified info. No opinions.",
+//   black: "You are the BLACK hat. Focus on caution, criticism, risk, weaknesses, potential failures.",
+// };
+
+// // Color styles for chat bubbles
+// const HAT_STYLE: Record<HatType, string> = {
+//   white: "bg-white border border-gray-300 text-gray-900",
+//   black: "bg-black text-white",
+// };
 
 interface TaskStep {
   id: number
